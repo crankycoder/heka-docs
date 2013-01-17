@@ -1,3 +1,6 @@
 [submodule "source/_themes/mozilla"]
         path = source/_themes/mozilla
         url = https://github.com/ametaireau/mozilla-sphinx-theme.git
+[submodule "source/_code/heka-mozsvc-plugins"]
+	path = source/_code/heka-mozsvc-plugins
+	url = git://github.com/crankycoder/heka-mozsvc-plugins.git

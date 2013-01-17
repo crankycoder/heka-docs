@@ -157,54 +157,11 @@ pool of `PluginWithGlobal` instances, calling `Init` on each one and passing
 in both the PluginGlobal *and* the config object.
 
 Consider an output plugin that will send data out over a UDP connection. The
-initialization code might look like so::
+initialization code might look like so :
 
-    // This will be our pipeline.PluginGlobal type
-    type UdpOutputGlobal struct {
-            conn net.Conn
-    }
-
-    // Provides pipeline.PluginGlobal interface
-    func (self *UdpOutputGlobal) Event(eventType string) {
-            if eventType == pipeline.STOP {
-                    self.conn.Close()
-            }
-    }
-
-    // This will be our PluginWithGlobal type
-    type UdpOutput struct {
-            global *UdpOutputGlobal
-    }
-
-    // Initialize UDP connection, store it on the PluginGlobal
-    func (self *UdpOutput) InitOnce(config interface{}) (pipeline.PluginGlobal, error) {
-            conf := config.(*pipeline.PluginConfig)
-            addr, ok := conf["address"]
-            if !ok {
-                    return nil, errors.New("UdpOutput: No UDP address")
-            }
-            addrStr, ok := addr.(string)
-            if !ok {
-                    return nil, errors.New("UdpOutput: UDP address not a string")
-            }
-            udpAddr, err := net.ResolveUdpAddr("udp", addr)
-            if err != nil {
-                    return nil, fmt.Errorf("UdpOutput error resolving UDP address %s: %s",
-                            addrStr, err.Error())
-            }
-            udpConn, err := net.DialUDP("udp", nil, udpAddr)
-            if err != nil {
-                    return nil, fmt.Errorf("UdpOutput error dialing UDP address %s: %s",
-                            addrStr, err.Error())
-            }
-            return &UdpOutputGlobal{udpConn}, nil
-    }
-
-    // Store a reference to the global for use during pipeline processing
-    func (self *UdpOutput) Init(global pipeline.PluginGlobal, config interface{}) error {
-            self.global = global // UDP connection available as self.global.conn
-            return nil
-    }
+.. literalinclude:: ../_code/heka-mozsvc-plugins/udp_output.go
+   :language: go
+   :lines: 36-91
 
 .. _custom_plugin_config:
 

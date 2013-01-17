@@ -161,7 +161,7 @@ initialization code might look like so :
 
 .. literalinclude:: ../_code/heka-mozsvc-plugins/udp_output.go
    :language: go
-   :lines: 36-91
+   :lines: 35-50,62-82
 
 .. _custom_plugin_config:
 
@@ -194,56 +194,11 @@ struct as desired before returning it from the `ConfigStruct` method.
 
 Revisiting our example above, let's say we wanted to have our `UdpOutput`
 plugin default to sending data to my.example.com, port 44444. The
-initialization code might look as follows::
+initialization code might look as follows:
 
-    // This will be our pipeline.PluginGlobal type
-    type UdpOutputGlobal struct {
-            conn net.Conn
-    }
-
-    // Provides pipeline.PluginGlobal interface
-    func (self *UdpOutputGlobal) Event(eventType string) {
-            if eventType == pipeline.STOP {
-                    self.conn.Close()
-            }
-    }
-
-    // This will be our PluginWithGlobal type
-    type UdpOutput struct {
-            global *UdpOutputGlobal
-    }
-
-    // This is our plugin's custom config struct
-    type UdpOutputConfig struct {
-            Address string
-    }
-
-    // Provides pipeline.HasConfigStruct interface, populates default value
-    func (self *UdpOutput) ConfigStruct() interface{} {
-            return &UdpOutputConfig{"my.example.com:44444"}
-    }
-
-    // Initialize UDP connection, store it on the PluginGlobal
-    func (self *UdpOutput) InitOnce(config interface{}) (pipeline.PluginGlobal, error) {
-            conf := config.(*UdpOutputConfig) // assert we have the right config struct type
-            udpAddr, err := net.ResolveUdpAddr("udp", conf.Address)
-            if err != nil {
-                    return nil, fmt.Errorf("UdpOutput error resolving UDP address %s: %s",
-                            conf.Address, err.Error())
-            }
-            udpConn, err := net.DialUDP("udp", nil, udpAddr)
-            if err != nil {
-                    return nil, fmt.Errorf("UdpOutput error dialing UDP address %s: %s",
-                            conf.Address, err.Error())
-            }
-            return &UdpOutputGlobal{udpConn}, nil
-    }    
-
-    // Store a reference to the global for use during pipeline processing
-    func (self *UdpOutput) Init(global pipeline.PluginGlobal, config interface{}) error {
-            self.global = global // UDP connection available as self.global.conn
-            return nil
-    }
+.. literalinclude:: ../_code/heka-mozsvc-plugins/udp_output.go
+   :language: go
+   :lines: 35-82
 
 .. _inputs:
 

@@ -48,7 +48,7 @@ PipelinePack
     state and configuration information for each message. To this end there is
     a `PipelinePack` struct defined in the `heka/pipeline` package's
     `pipeline_runner.go <https://github.com/mozilla-
-    services/heka/tree/dev/pipeline/pipeline_runner.go>`_ file. `PipelinePack`
+    services/heka/tree/dev/pipeline/pipeline_runner.go>`__ file. `PipelinePack`
     objects are what get passed in to the various Heka plugins as messages
     flow through the pipelines.
 
@@ -61,7 +61,7 @@ PluginWithGlobal / PluginGlobal
     same output file, for instance. For this reason, many plugins are of type
     `PluginWithGlobal` and have an accompanying `PluginGlobal` object (see
     `pipeline_runner.go <https://github.com/mozilla-
-    services/heka/tree/dev/pipeline/pipeline_runner.go>`_). Each
+    services/heka/tree/dev/pipeline/pipeline_runner.go>`__). Each
     `PluginWithGlobal` plugin type specified in your Heka configuration will
     cause `PoolSize` instances of the plugin itself to be created but only a
     single `PluginGlobal` instance to be shared between them.
@@ -456,20 +456,20 @@ modified by methods to which it is passed. (Note that this is true even if
 The `DataRecycler` interface defines the methods related to creating,
 preparing, and recycling these `outData` objects:
 
-MakeOutData() (outData interface{})
+`MakeOutData() (outData interface{})`
     Despite the name, this method will not provide you with information about
     who has been kissing whom among your circle of friends. Instead, this
     method on your writer object is responsible for instantiating and
     returning exactly one `outData` pointer object which will be in use for
     the life of the Heka process.
 
-ZeroOutData(outData interface{})
+`ZeroOutData(outData interface{})`
     After an `outData` object has been used and its contents have been sent on
     to their ultimate destination, it will be recycled. `ZeroOutData` will be
     passed a used `outData` object to be reset to a zero condition so it is
     suitable for reuse.
 
-PrepOutData(pack *PipelinePack, outData interface{}, timeout *time.Duration) error
+`PrepOutData(pack *PipelinePack, outData interface{}, timeout *time.Duration)` error
     This is the method that performs the real work. It will be passed a
     `*PipelinePack` object (containing a populated `Message` object) and a
     zeroed `outData` object. `PrepOutData` must extract any desired data from
@@ -493,7 +493,7 @@ Once a `DataRecycler` implementation has set up management of our `outData`
 objects, we can get to the task of actually writing to the output by providing
 a `Writer` implementation:
 
-Init(config interface{}) error
+`Init(config interface{}) error`
     This is a setup method that will be called exactly once. This is wired up
     to Heka's config system, and any configuration values specified for this
     particular `Runner` plugin will be passed along to the `Writer`. As with
@@ -505,12 +505,48 @@ Init(config interface{}) error
     network connection, or do any other initialization of resources to be
     shared by the entire pool of pipelines.
 
-Write(outData interface{}) error
+`Write(outData interface{}) error`
     The `Write` method receives a populated `outData` object and is
     responsible for sending the data out over the wire. It will be called
     repeatedly, but for a given `Writer` instance it will only ever be called
     from a single goroutine, so it is safe to make use of any shared resource
     without needing to worry about contention or locks.
+
+Writer Example
+==============
+
+Let's update the UDPOutput and change it from using a
+`PluginWithGlobal` interface and switch it to using the Runner
+pattern.
+
+With a Writer, the Writer itself is the shared `PluginGlobal`.  So you'll need
+to move the Event method and collapse the attributes that were
+previously stored on the UdpOutputGlobal and move them into the
+Writer.
+
+.. literalinclude:: ../_code/heka-mozsvc-plugins/udpwriter.go
+   :language: go
+   :lines: 34-44
+
+
+The InitOnce method is no longer required as the Writer is guaranteed
+to have Init called only once.  This means we can move the code in 
+InitOnce to the main Init method.
+
+.. literalinclude:: ../_code/heka-mozsvc-plugins/udpwriter.go
+   :language: go
+   :lines: 56-71
+
+The final change you'll need to make is to implement the DataRecycler
+interface :
+
+.. literalinclude:: ../_code/heka-mozsvc-plugins/udpwriter.go
+   :language: go
+   :lines: 79-95
+
+A fully working version of this code can be found in the
+`heka-mozsvc-plugins
+<http://github.com/mozilla-services/heka-mozsvc-plugins>`_ repository.
 
 .. _batchwriter_interface:
 
